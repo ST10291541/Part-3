@@ -1,5 +1,6 @@
 package vcmsa.projects.budgetingbestie
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -26,7 +27,12 @@ class LoginActivity : AppCompatActivity() {
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show()
-                            // Navigate to a home screen or dashboard if needed
+
+                            // Navigate to UserActivity
+                            val intent = Intent(this, UserActivity::class.java)
+                            startActivity(intent)
+                            finish()
+
                         } else {
                             Toast.makeText(this, "Login failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                         }
