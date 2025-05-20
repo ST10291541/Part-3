@@ -1,5 +1,6 @@
 package vcmsa.projects.budgetingbestie
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -67,6 +68,9 @@ class UserActivity : AppCompatActivity() {
                 edtName.text.clear()
                 edtSurname.text.clear()
                 edtNumber.text.clear()
+                val intent = Intent(this, ProfileActivity::class.java)
+                startActivity(intent)
+                finish()
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error saving profile: ${e.message}", Toast.LENGTH_LONG).show()
