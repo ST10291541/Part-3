@@ -29,7 +29,7 @@ class LoginActivity : AppCompatActivity() {
                             Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show()
 
                             // Navigate to UserActivity
-                            val intent = Intent(this, ProfileActivity::class.java)
+                            val intent = Intent(this, Dashboard::class.java)
                             startActivity(intent)
                             finish()
 
