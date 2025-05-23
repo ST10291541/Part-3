@@ -2,8 +2,10 @@ package vcmsa.projects.budgetingbestie
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -13,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import vcmsa.projects.budgetingbestie.databinding.ActivityExpensesMainBinding
-
 
 class ExpensesMain : AppCompatActivity() {
     private lateinit var binding: ActivityExpensesMainBinding
@@ -38,7 +39,7 @@ class ExpensesMain : AppCompatActivity() {
             } else {
                 currentUserId = user.uid
                 loadLatestTransactions()
-                //loadLatestCategories()
+                loadLatestCategories()
             }
         }
 
@@ -46,7 +47,7 @@ class ExpensesMain : AppCompatActivity() {
             startActivity(Intent(this, AllExpenses::class.java))
         }
 
-        /*binding.tvViewAllCategories.setOnClickListener {
+        binding.tvViewAllCategories.setOnClickListener {
             startActivity(Intent(this, CategoryMain::class.java))
         }
 
@@ -54,7 +55,7 @@ class ExpensesMain : AppCompatActivity() {
             startActivity(Intent(this, Dashboard::class.java))
         }
 
-        binding.fabBudget.setOnClickListener {
+        /*binding.fabBudget.setOnClickListener {
             startActivity(Intent(this, BudgetMain::class.java))
     }*/
 
@@ -67,7 +68,7 @@ class ExpensesMain : AppCompatActivity() {
         super.onResume()
         if (currentUserId != "") {
             loadLatestTransactions()
-            //loadLatestCategories()
+            loadLatestCategories()
         }
     }
 
@@ -110,12 +111,11 @@ class ExpensesMain : AppCompatActivity() {
         }
     }
 
-    /*private fun loadLatestCategories() {
+
+    private fun loadLatestCategories() {
         lifecycleScope.launch {
             try {
-                // Assuming you have a CategoryRepository or DAO with getLatestThreeCategories(userId)
-                // This part of your code interacts with categoryDao, which is separate.
-                // You need to implement a similar repository for categories connected to Firestore
+
                 val latestCategories = loadLatestCategoriesFromFirestore(currentUserId)
                 withContext(Dispatchers.Main) {
                     binding.categoriesContainer.removeAllViews()
@@ -142,11 +142,12 @@ class ExpensesMain : AppCompatActivity() {
                 }
             }
         }
-    }*/
-
-    // Stub function for loading categories from Firestore - implement your CategoryRepository similarly
-    //private suspend fun loadLatestCategoriesFromFirestore(userId: Int): List<Category> {
-    //    // TODO: Implement Firestore category fetching as needed
-     //   return emptyList()
     }
+
+    private suspend fun loadLatestCategoriesFromFirestore(userId: String): List<Category> {
+        val categoryRepository = CategoryRepository()
+        return categoryRepository.getLatestThreeCategories(userId)
+    }
+
+}
 

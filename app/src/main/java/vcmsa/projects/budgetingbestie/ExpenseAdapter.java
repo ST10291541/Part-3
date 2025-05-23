@@ -3,6 +3,7 @@ package vcmsa.projects.budgetingbestie;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 
 import java.util.List;
 
@@ -52,6 +55,7 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
         return new ExpenseViewHolder(view);
     }
 
+
     @Override
     public void onBindViewHolder(@NonNull ExpenseViewHolder holder, int position) {
         Expense expense = expenseList.get(position);
@@ -61,17 +65,25 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
         holder.tvCategory.setText("Category: " + expense.getCategory());
         holder.tvDate.setText("Date: " + expense.getDate());
 
-        if (expense.getReceiptPhotoUri() != null && !expense.getReceiptPhotoUri().isEmpty()) {
-            holder.ivReceipt.setVisibility(View.VISIBLE);
-            holder.ivReceipt.setImageURI(Uri.parse(expense.getReceiptPhotoUri()));
-        } else {
+        // Safely handle receipt photo
+        try {
+            if (expense.getReceiptPhotoUri() != null && !expense.getReceiptPhotoUri().isEmpty()) {
+                holder.ivReceipt.setVisibility(View.VISIBLE);
+                // Use a library like Glide or Picasso to handle the URI safely
+                Glide.with(context)
+                        .load(Uri.parse(expense.getReceiptPhotoUri()))
+                        .into(holder.ivReceipt);
+            } else {
+                holder.ivReceipt.setVisibility(View.GONE);
+            }
+        } catch (SecurityException e) {
             holder.ivReceipt.setVisibility(View.GONE);
+            Log.e("ExpenseAdapter", "Permission denied for receipt image", e);
         }
 
         holder.btnEdit.setOnClickListener(v -> {
             Intent intent = new Intent(context, EditExpense.class);
-            intent.putExtra("expenseId", expense.getId()); // Ensure this is a String ID
-
+            intent.putExtra("expenseId", expense.getId());
             context.startActivity(intent);
         });
     }

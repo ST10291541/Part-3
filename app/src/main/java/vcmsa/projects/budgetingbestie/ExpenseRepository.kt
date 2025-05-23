@@ -1,5 +1,6 @@
 package vcmsa.projects.budgetingbestie
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
@@ -7,6 +8,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class ExpenseRepository {
+
     private val firestore = FirebaseFirestore.getInstance()
     private val collection = firestore.collection("expenses")
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -18,9 +20,14 @@ class ExpenseRepository {
         } else {
             expense.id
         }
-        val expenseWithId = expense.copy(id = docId)
+
+        val expenseWithId = expense.copy(
+            id = docId,
+            createdAt = expense.createdAt
+        )
         collection.document(docId).set(expenseWithId).await()
     }
+
 
     // Get all expenses for a user
     suspend fun getAllExpenses(userId: String): List<Expense> {
@@ -31,10 +38,10 @@ class ExpenseRepository {
         return snapshot.toObjects(Expense::class.java)
     }
 
-    // Get latest three expenses ordered by date DESC for a user
+    // Get latest three expenses ordered by createdAt DESC for a user
     suspend fun getLatestThreeExpenses(userId: String): List<Expense> {
         val snapshot = collection.whereEqualTo("userId", userId)
-            .orderBy("date", Query.Direction.DESCENDING)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
             .limit(3)
             .get()
             .await()
@@ -85,23 +92,24 @@ class ExpenseRepository {
     }
 
     // Get category totals between dates for a user (Map<Category, TotalAmount>)
-    suspend fun getCategoryTotalsBetween(startDate: String, endDate: String, userId: String): Map<String, Double> {
+    suspend fun getCategoryTotalsBetween(userId: String, start: Timestamp, end: Timestamp): List<CategoryTotal> {
         val expenses = collection.whereEqualTo("userId", userId).get().await().toObjects(Expense::class.java)
-        val start = dateFormat.parse(startDate)
-        val end = dateFormat.parse(endDate)
-        if (start == null || end == null) return emptyMap()
 
         val filtered = expenses.filter {
-            val expenseDate = dateFormat.parse(it.date)
-            expenseDate != null && !expenseDate.before(start) && !expenseDate.after(end)
+            val expenseTimestamp = it.createdAt
+            expenseTimestamp != null &&
+                    expenseTimestamp.compareTo(start) >= 0 && expenseTimestamp.compareTo(end) <= 0
         }
 
-        val categoryTotals = mutableMapOf<String, Double>()
+        val categoryTotalsMap = mutableMapOf<String, Double>()
         for (expense in filtered) {
             val amount = expense.amount.toDoubleOrNull() ?: 0.0
-            categoryTotals[expense.category] = (categoryTotals[expense.category] ?: 0.0) + amount
+            categoryTotalsMap[expense.category] = (categoryTotalsMap[expense.category] ?: 0.0) + amount
         }
-        return categoryTotals
+
+        // Convert map to List<CategoryTotal>
+        return categoryTotalsMap.map { (category, total) -> CategoryTotal(category, total) }
     }
+
 }
 

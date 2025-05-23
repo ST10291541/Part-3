@@ -19,6 +19,7 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -41,6 +42,8 @@ class AddExpenses : AppCompatActivity() {
     private val CAMERA_PERMISSION_REQUEST_CODE = 1001
     private var imageUri: Uri? = null
     private lateinit var expenseRepository: ExpenseRepository
+    private val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,10 +66,20 @@ class AddExpenses : AppCompatActivity() {
         setupAddExpenseButton()
     }
 
+    private fun getCurrentUserId(): String {
+        return FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    }
+
+
     private fun setupCategorySpinner() {
-        // Assuming you have a method to get categories from Firestore
+        val userId = getCurrentUserId()
+        if (userId.isEmpty()) {
+            Toast.makeText(this, "No user signed in.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         lifecycleScope.launch {
-            val categories = getCategoriesFromFirestore()
+            val categories = getCategoriesFromFirestore(userId)
             val adapter = ArrayAdapter(
                 this@AddExpenses,
                 android.R.layout.simple_spinner_dropdown_item,
@@ -76,9 +89,19 @@ class AddExpenses : AppCompatActivity() {
         }
     }
 
-    private suspend fun getCategoriesFromFirestore(): List<String> {
-        // TODO: Implement Firestore logic to fetch categories
-        return listOf("Food", "Transport", "Utilities") // Example categories
+
+    private suspend fun getCategoriesFromFirestore(userId: String): List<String> {
+        return try {
+            val snapshot = firestore.collection("categories")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { it.getString("name") }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
     }
 
     private fun setupDatePicker() {
