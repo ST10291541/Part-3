@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class EditExpense : AppCompatActivity() {
@@ -31,6 +32,7 @@ class EditExpense : AppCompatActivity() {
     private var currentExpense: Expense? = null
     private lateinit var expenseRepository: ExpenseRepository
     private var categories: List<String> = emptyList()
+    private val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
 
     companion object {
         private const val PICK_IMAGE_REQUEST = 102
@@ -61,11 +63,19 @@ class EditExpense : AppCompatActivity() {
         btnDelete = findViewById(R.id.btnDeleteExpense)
     }
 
+
+    // ... (rest of your imports and class code)
+
     private fun loadCategories() {
         lifecycleScope.launch {
             try {
-                // Assuming you have a method to get categories from Firestore
-                categories = getCategoriesFromFirestore()
+                // Get the current user ID
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId == null) {
+                    Toast.makeText(this@EditExpense, "User not authenticated", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                categories = getCategoriesFromFirestore(userId)
                 val adapter = ArrayAdapter(
                     this@EditExpense,
                     android.R.layout.simple_spinner_dropdown_item,
@@ -78,9 +88,18 @@ class EditExpense : AppCompatActivity() {
         }
     }
 
-    private suspend fun getCategoriesFromFirestore(): List<String> {
-        // TODO: Implement Firestore logic to fetch categories
-        return listOf("Food", "Transport", "Utilities") // Example categories
+    private suspend fun getCategoriesFromFirestore(userId: String): List<String> {
+        return try {
+            val snapshot = firestore.collection("categories")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { it.getString("name") }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
     }
 
     private fun setupDatePicker() {

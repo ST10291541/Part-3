@@ -87,7 +87,6 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
             context.startActivity(intent);
         });
     }
-
     @Override
     public int getItemCount() {
         return expenseList.size();
